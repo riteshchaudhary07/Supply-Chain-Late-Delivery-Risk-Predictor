@@ -1,18 +1,4 @@
-"""
-app.py
-------
-Streamlit app for the Supply Chain Late Delivery Risk Predictor.
-
-Run locally:
-    streamlit run app.py
-
-Deploy on Streamlit Community Cloud:
-    1. Push this whole folder to a public GitHub repo.
-    2. Go to https://share.streamlit.io -> "New app".
-    3. Point it at your repo, branch = main, main file path = app.py.
-    4. Deploy. Streamlit Cloud installs requirements.txt automatically.
-"""
-
+## import the libraries
 import joblib
 import numpy as np
 import pandas as pd
@@ -20,16 +6,16 @@ import plotly.express as px
 import streamlit as st
 from sklearn.decomposition import PCA
 
-# ----------------------------------------------------------------------
-# Page setup
-# ----------------------------------------------------------------------
+
+# 1.Page setup
+
 st.set_page_config(page_title="Supply Chain Delay Predictor", page_icon="📦", layout="wide")
 
 st.title("📦 Supply Chain Late Delivery Risk Predictor")
 
-# ----------------------------------------------------------------------
-# Load artifacts (cached so it only loads once per session)
-# ----------------------------------------------------------------------
+
+# 2.Load artifacts
+
 @st.cache_resource
 def load_artifacts():
     pipeline = joblib.load("artifacts/model_pipeline.pkl")
@@ -54,9 +40,9 @@ feature_importance = metadata["feature_importance"]
 
 Tab_predict, Tab_insights = st.tabs(["🔮 Predict", "📊 Model Insights"])
 
-# ========================================================================
-# TAB 1 — Prediction form
-# ========================================================================
+
+# TAB 1 Prediction form
+
 with Tab_predict:
     st.write(
         "Enter order details below to predict whether this order is likely to be "
@@ -106,13 +92,14 @@ with Tab_predict:
         "Model: XGBoost Classifier | Preprocessing: OneHotEncoder + StandardScaler in a single sklearn Pipeline"
     )
 
+# TAB 2 == Model Insights (EDA + evaluation graphs for your dashboard)
 # ========================================================================
-# TAB 2 — Model Insights (EDA + evaluation graphs for your dashboard)
-# ========================================================================
+
 with Tab_insights:
     st.write("Everything below comes straight from the artifacts saved during training in `train.py`.")
 
-    # ---- headline metrics --------------------------------------------
+    # headline metrics
+    
     m1, m2, m3 = st.columns(3)
     m1.metric("Accuracy", f"{metrics['accuracy']:.1%}")
     m2.metric("F1 Score (Late class)", f"{metrics['f1_score']:.3f}")
@@ -124,7 +111,7 @@ with Tab_insights:
 
     col_a, col_b = st.columns(2)
 
-    # ---- 1. Class balance ----------------------------------------------
+    # 1. Class balance 
     with col_a:
         st.subheader("Target class balance")
         class_counts = raw_df["Late_Delivery_Risk"].map({0: "On time", 1: "Late"}).value_counts()
@@ -137,7 +124,8 @@ with Tab_insights:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    # ---- 2. Confusion matrix --------------------------------------------
+    # 2. Confusion matrix 
+    
     with col_b:
         st.subheader("Confusion matrix (test set)")
         cm = np.array(confusion_matrix_data)
@@ -152,7 +140,7 @@ with Tab_insights:
 
     col_c, col_d = st.columns(2)
 
-    # ---- 3. Feature importance ------------------------------------------
+    # 3. Feature importance
     with col_c:
         st.subheader("Top feature importances")
         fi_series = pd.Series(feature_importance).sort_values(ascending=True)
@@ -160,7 +148,7 @@ with Tab_insights:
         fig.update_layout(xaxis_title="Importance", yaxis_title="")
         st.plotly_chart(fig, use_container_width=True)
 
-    # ---- 4. Late-delivery rate by shipping mode -------------------------
+    #  4. Late delivery rate by shipping mode
     with col_d:
         st.subheader("Late-delivery rate by Shipping Mode")
         rate = raw_df.groupby("Shipping_Mode")["Late_Delivery_Risk"].mean().sort_values(ascending=False)
@@ -171,14 +159,14 @@ with Tab_insights:
 
     col_e, col_f = st.columns(2)
 
-    # ---- 5. Correlation heatmap (numeric features) -----------------------
+    #  5. Correlation heatmap  
     with col_e:
         st.subheader("Correlation heatmap (numeric features)")
         corr = raw_df[num_features + ["Late_Delivery_Risk"]].corr()
         fig = px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
         st.plotly_chart(fig, use_container_width=True)
 
-    # ---- 6. PCA projection (visualization only — NOT fed into the model) --
+    #  6. PCA projection (visualization only NOT fed into the model) 
     with col_f:
         st.subheader("PCA projection of orders (2D)")
         st.caption("For visualization only — the model itself trains on the original features, not these components.")
