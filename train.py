@@ -1,13 +1,4 @@
-"""
-train.py
---------
-Trains an XGBoost classifier to predict Late_Delivery_Risk (0 = on time, 1 = late)
-and saves the whole pipeline (preprocessing + model) so app.py can load it directly.
-
-Run:
-    python train.py
-"""
-
+## import the libraries
 import joblib
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -23,9 +14,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
-# ----------------------------------------------------------------------
-# 1. Load data
-# ----------------------------------------------------------------------
+
+##1. Load dataset
+
 DATA_PATH = "data/supply_chain_data.csv"
 df = pd.read_csv(DATA_PATH)
 
@@ -50,16 +41,16 @@ NUMERIC_FEATURES = [
 X = df[CATEGORICAL_FEATURES + NUMERIC_FEATURES]
 y = df[TARGET]
 
-# ----------------------------------------------------------------------
-# 2. Train / test split (stratified because classes are imbalanced)
-# ----------------------------------------------------------------------
+
+# 2. Train - test split 
+
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
 
-# ----------------------------------------------------------------------
-# 3. Preprocessing: one-hot encode categoricals, scale numerics
-# ----------------------------------------------------------------------
+
+# 3. Preprocessing: onehot encode categoricals, scale numerics
+
 preprocessor = ColumnTransformer(
     transformers=[
         ("cat", OneHotEncoder(handle_unknown="ignore"), CATEGORICAL_FEATURES),
@@ -81,16 +72,16 @@ model = XGBClassifier(
     random_state=42,
 )
 
-# ----------------------------------------------------------------------
+
 # 4. Full pipeline (preprocessing + model) — this is what gets deployed
-# ----------------------------------------------------------------------
+
 pipeline = Pipeline(steps=[("preprocessor", preprocessor), ("model", model)])
 
 pipeline.fit(X_train, y_train)
 
-# ----------------------------------------------------------------------
+
 # 5. Evaluate
-# ----------------------------------------------------------------------
+
 y_pred = pipeline.predict(X_test)
 y_proba = pipeline.predict_proba(X_test)[:, 1]
 
@@ -105,9 +96,9 @@ print("F1 score :", round(f1, 4))
 print("ROC-AUC  :", round(roc_auc, 4))
 print("\nClassification report:\n", classification_report(y_test, y_pred))
 
-# ----------------------------------------------------------------------
+
 # 6. Feature importance (for the dashboard's Insights tab)
-# ----------------------------------------------------------------------
+
 encoded_cols = pipeline.named_steps["preprocessor"].get_feature_names_out()
 importances = pipeline.named_steps["model"].feature_importances_
 feature_importance = (
@@ -117,9 +108,9 @@ feature_importance = (
     .to_dict()
 )
 
-# ----------------------------------------------------------------------
+
 # 7. Save artifacts
-# ----------------------------------------------------------------------
+
 joblib.dump(pipeline, "artifacts/model_pipeline.pkl")
 
 metadata = {
@@ -132,8 +123,8 @@ metadata = {
         col: (float(df[col].min()), float(df[col].max())) for col in NUMERIC_FEATURES
     },
     "target": TARGET,
-    # everything below is only used to power the Streamlit "Insights" tab —
-    # saved once here so the app doesn't need to retrain/recompute on every load
+    #here  everything below is only used to power the Streamlit "Insights" tab 
+
     "metrics": {
         "accuracy": float(accuracy),
         "f1_score": float(f1),
